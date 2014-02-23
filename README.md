@@ -5,36 +5,36 @@ Implementa una vista del tipo grid de datos con soporte para agrupar columnas
 
 Ejemplo: main.xml
 -------------------------------------------------------------------------------------
-&lt;?xml version="1.0" encoding="utf-8"?&gt;
-&lt;LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tarsys="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#f3f3f3"
-    &gt;    
-&lt;com.tarsys.android.view.GridDatos 
-                            android:id="@+id/gridDatos"
-                            android:background="#c3d3e3"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            tarsys:colorFondoCabeceraSolido="false"
-                            tarsys:colorFondoDatosSolido="true"
-                            tarsys:colorFondoFilaAgrupacionSolido="false"
-                            tarsys:colorFilaAgrupacion="#c3d3e3"
-                            tarsys:colorTextoAgrupacion="#000000"
-                            tarsys:tamTextoAgrupacion="12sp"
-                            tarsys:colorFilaImpar="#e3e3e3"
-                            tarsys:colorFilaPar="#93e383"
-                            tarsys:altoCabecera="20dp"
-                            tarsys:separacionCeldasIzquierda="2dp"
-                            tarsys:separacionCeldasDerecha="2dp"
-                            tarsys:margenCeldasDerecha="2dp"
-                            tarsys:margenCeldasArriba="2dp"
-                            tarsys:textoProgresoCarga="Cargando datos..."
-                            tarsys:tituloProgresoCarga=""
-/&gt;
-&lt;/LinearLayout&gt;
+&lt;?xml version="1.0" encoding="utf-8"?&gt;<br/>
+&lt;LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"<br/>
+              xmlns:tarsys="http://schemas.android.com/apk/res-auto"<br/>
+    android:orientation="vertical"<br/>
+    android:layout_width="match_parent"<br/>
+    android:layout_height="match_parent"<br/>
+    android:background="#f3f3f3"<br/>
+    &gt;    <br/>
+&lt;com.tarsys.android.view.GridDatos <br/>
+                            android:id="@+id/gridDatos"<br/>
+                            android:background="#c3d3e3"<br/>
+                            android:layout_width="match_parent"<br/>
+                            android:layout_height="match_parent"<br/>
+                            tarsys:colorFondoCabeceraSolido="false"<br/>
+                            tarsys:colorFondoDatosSolido="true"<br/>
+                            tarsys:colorFondoFilaAgrupacionSolido="false"<br/>
+                            tarsys:colorFilaAgrupacion="#c3d3e3"<br/>
+                            tarsys:colorTextoAgrupacion="#000000"<br/>
+                            tarsys:tamTextoAgrupacion="12sp"<br/>
+                            tarsys:colorFilaImpar="#e3e3e3"<br/>
+                            tarsys:colorFilaPar="#93e383"<br/>
+                            tarsys:altoCabecera="20dp"<br/>
+                            tarsys:separacionCeldasIzquierda="2dp"<br/>
+                            tarsys:separacionCeldasDerecha="2dp"<br/>
+                            tarsys:margenCeldasDerecha="2dp"<br/>
+                            tarsys:margenCeldasArriba="2dp"<br/>
+                            tarsys:textoProgresoCarga="Cargando datos..."<br/>
+                            tarsys:tituloProgresoCarga=""<br/>
+/&gt;<br/>
+&lt;/LinearLayout&gt;<br/>
 -------------------------------------------------------------------------------------
 En la actividad principal:
 
