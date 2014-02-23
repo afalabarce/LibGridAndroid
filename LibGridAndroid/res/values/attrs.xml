@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="GridDatos">
+        <attr name="colorFondoCabeceraSolido" format="boolean" />
+        <attr name="colorFondoDatosSolido" format="boolean" />        
+        <attr name="colorFondoFilaAgrupacionSolido" format="boolean" />
+        <attr name="mostrarResumenGrupos" format="boolean" />
+        <attr name="mostrarResumenGeneral" format="boolean" />
+        
+        <attr name="colorFilaImpar" format="color" />
+        <attr name="colorFilaPar" format="color" />
+        <attr name="colorFilaAgrupacion" format="color" />
+        <attr name="colorTextoAgrupacion" format="color" />
+        <attr name="tamTextoAgrupacion" format="dimension" />
+        
+        <attr name="altoCabecera" format="dimension" />
+        <attr name="margenCeldasIzquierda" format="dimension" />
+        <attr name="margenCeldasDerecha" format="dimension" />
+        <attr name="margenCeldasArriba" format="dimension" />
+        <attr name="margenCeldasAbajo" format="dimension" />
+        <attr name="textoProgresoCarga" format="string" />
+        <attr name="tituloProgresoCarga" format="string" />
+        <attr name="separacionCeldasIzquierda" format="dimension" />
+        <attr name="separacionCeldasDerecha" format="dimension" />
+        <attr name="separacionCeldasArriba" format="dimension" />
+        <attr name="separacionCeldasAbajo" format="dimension" />
+    </declare-styleable>
+</resources>
