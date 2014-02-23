@@ -33,8 +33,9 @@ Ejemplo: main.xml
                             tarsys:margenCeldasArriba="2dp"<br/>
                             tarsys:textoProgresoCarga="Cargando datos..."<br/>
                             tarsys:tituloProgresoCarga=""<br/>
-/&gt;<br/>
-&lt;/LinearLayout&gt;<br/>
+/&gt;<br>
+&lt;/LinearLayout&gt; <br/>
+
 -------------------------------------------------------------------------------------
 En la actividad principal (oncreate, por ejemplo...):
 
