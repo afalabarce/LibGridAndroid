@@ -36,16 +36,12 @@ Ejemplo: main.xml
 /&gt;<br/>
 &lt;/LinearLayout&gt;<br/>
 -------------------------------------------------------------------------------------
-En la actividad principal:
+En la actividad principal (oncreate, por ejemplo...):
 
-public void onCreate(Bundle savedInstanceState)
-    {
-        super.onCreate(savedInstanceState);
+
         try{
             setContentView(R.layout.main);
             gridDatos = (GridDatos) this.findViewById(R.id.gridDatos);
-            
-            //&lt;editor-fold defaultstate="collapsed" desc="Columnas del grid"&gt;
             
             ColumnaGridDatos colX = new ColumnaGridDatos("Seleccion", TipoDatoColumna.Boolean, "X",5);
             colX.setColorFondoCabecera(Color.GRAY);                        
@@ -82,7 +78,6 @@ public void onCreate(Bundle savedInstanceState)
                     array.add(o1);
                 }
             }
-            //&lt;/editor-fold&gt;            
             
             gridDatos.setControladorColumnas(new ClickHeaderListener() {
 
@@ -97,5 +92,5 @@ public void onCreate(Bundle savedInstanceState)
         }catch(Exception ex){
             // .....
         }
-    }
+    
 
