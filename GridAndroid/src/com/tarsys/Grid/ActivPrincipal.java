@@ -11,6 +11,7 @@ import com.tarsys.android.view.listeners.ClickHeaderListener;
 import com.tarsys.android.view.util.AlineacionDatos;
 import com.tarsys.android.view.util.ColumnaGridDatos;
 import com.tarsys.android.view.util.TipoDatoColumna;
+import com.tarsys.android.view.util.TipoResumenColumna;
 
 
 public class ActivPrincipal extends Activity
@@ -42,6 +43,7 @@ public class ActivPrincipal extends Activity
             colValor.setFormatoDatosColumna("#,##0.00 €");
             colValor.setColorFondoCabecera(Color.GRAY);
             colValor.setAlineacionDatos(AlineacionDatos.Derecha);
+            colValor.setTipoResumenColumna(TipoResumenColumna.Sumatorio);
             
             gridDatos.addColumna(colX);
             gridDatos.addColumna(colCodigo);

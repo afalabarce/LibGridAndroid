@@ -34,6 +34,7 @@ import com.tarsys.android.view.listeners.ClickHeaderListener;
 import com.tarsys.android.view.util.ColumnaGridDatos;
 import com.tarsys.android.view.util.TipoDatoColumna;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -307,6 +308,148 @@ public class GridDatos extends LinearLayout
             
             // Agregamos los datos
             AsyncTask taskCargaDatos = new AsyncTask() {
+                
+                private TableRow FilaAgrupacion(String textoAgrupacion){
+                    TableRow filaAgrup = new TableRow(GridDatos.this.contexto);      
+                    
+                    TextView celdaAgrup = new TextView(GridDatos.this.contexto);
+                    celdaAgrup.setMaxLines(1);
+                    celdaAgrup.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));
+                    ((TableRow.LayoutParams)celdaAgrup.getLayoutParams()).span = GridDatos.this.columnas.size();
+                    celdaAgrup.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion);
+                    celdaAgrup.setText(textoAgrupacion);
+                    if (!GridDatos.this.colorFondoFilaAgrupacionSolido){
+                        int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = GridDatos.this.colorFilaAgrupacion;
+                        GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
+                        celdaAgrup.setBackgroundDrawable(gd);
+                    }else{
+                        celdaAgrup.setBackgroundColor(GridDatos.this.colorFilaAgrupacion);
+                    }
+                    celdaAgrup.setTextColor(GridDatos.this.colorTextoAgrupacion);
+                    filaAgrup.addView(celdaAgrup);
+                    
+                    return filaAgrup;
+                }
+                
+                private TableRow FilaDatos (JsonObject dato, int idx){
+                    TableRow filaDato = new TableRow(GridDatos.this.contexto);
+                                                    
+                    for(ColumnaGridDatos columna : GridDatos.this.columnas){
+
+                        TextView celda = new TextView (GridDatos.this.contexto);
+                        celda.setTextSize(TypedValue.COMPLEX_UNIT_SP, columna.getTamFuenteTitulo());
+                        celda.setTextColor(columna.getColorTextoDatos());
+
+                        celda.setPadding(GridDatos.this.separacionCeldasIzquierda, GridDatos.this.separacionCeldasArriba, GridDatos.this.separacionCeldasDerecha, GridDatos.this.separacionCeldasAbajo);
+
+                        TableRow.LayoutParams layout = new TableRow.LayoutParams(columna.getAnchoColumna() * 7 * (int)GridDatos.this.densidad, TableRow.LayoutParams.MATCH_PARENT);
+                        layout.leftMargin = GridDatos.this.margenCeldasIzquierda; layout.bottomMargin = GridDatos.this.margenCeldasAbajo;
+                        layout.rightMargin = GridDatos.this.margenCeldasDerecha; layout.topMargin = GridDatos.this.margenCeldasArriba;
+                        celda.setLayoutParams(layout);
+                        ArrayList<Integer> coloresFondo = new ArrayList<Integer>();
+                        int colorFondo = idx % 2 == 0? GridDatos.this.colorFilaPar : GridDatos.this.colorFilaImpar;
+
+                        if (colorFondo != Color.TRANSPARENT) coloresFondo.add(colorFondo);
+                        if (columna.getColorFondoDatos() != Color.TRANSPARENT)
+                            coloresFondo.add(columna.getColorFondoDatos());
+                        if (coloresFondo.size() > 1){
+                            int [] c = new int[coloresFondo.size()];
+                            int i = 0;
+                            for(int c1 : coloresFondo)  c[i++] = c1;
+                            GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, c);
+                            celda.setBackgroundDrawable(gd);
+                        }else{
+                            int cFondo = columna.getColorFondoDatos() != Color.TRANSPARENT? columna.getColorFondoDatos() : colorFondo;
+
+                            if (!GridDatos.this.colorFondoDatosSolido){
+                                int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = cFondo;
+                                GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
+                                celda.setBackgroundDrawable(gd);
+                            }else{
+                                celda.setBackgroundColor(cFondo);
+                            }
+                        }
+                        celda.setGravity(columna.getAlineacionCabecera().value());
+                        celda.setVisibility(columna.isVisible() ? TextView.VISIBLE : TextView.GONE);
+                        if (columna.getTipoDatoColumna() == TipoDatoColumna.Boolean){
+                            celda.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                            celda.setGravity(Gravity.CENTER);
+                            celda.setText(dato.get(columna.getNombreColumna()).getAsBoolean() ? "x" : "");
+                        }else{
+                            //<editor-fold defaultstate="collapsed" desc="Formateo de datos">
+                            String texto = "";
+                            switch (columna.getTipoDatoColumna()){
+                                case NumeroEntero:
+                                {
+                                    try{
+                                        int valorNum = Integer.parseInt(dato.get(columna.getNombreColumna()).getAsString());
+                                        texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
+                                    }catch (NumberFormatException ex){
+                                        texto = "NaN";
+                                    }
+                                    break;
+                                }
+                                case NumeroDecimal:
+                                {
+                                    try{
+                                        float valorNum = Float.parseFloat(dato.get(columna.getNombreColumna()).getAsString());
+                                        texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
+                                    }catch (NumberFormatException ex){
+                                        texto = "NaN";
+                                    }
+
+                                    break;
+                                }
+                                case Fecha:
+                                {                                                                                                
+                                    try{
+                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+                                        Date fecha = sdf.parse(dato.get(columna.getNombreColumna()).getAsString());
+                                        // Si se ha podido crear la fecha, la formateamos a lo que deseemos...
+                                        texto = columna.getFormatoDatosColumna().trim().isEmpty()? sdf.format(fecha) :  new SimpleDateFormat(columna.getFormatoDatosColumna()).format(fecha);
+                                    }catch(ParseException ex){
+                                        texto = "NaD";
+                                    }
+                                    break;
+                                }
+                                case Texto:
+                                    texto = dato.get(columna.getNombreColumna()).getAsString();
+                                    break;                                            
+                            }
+                            if (columna.getTipoDatoColumna() != TipoDatoColumna.Boolean) celda.setGravity(columna.getAlineacionDatos().value());
+                            celda.setText(texto);
+                            //</editor-fold>
+
+                        }
+                        filaDato.addView(celda);
+                    }
+                    return filaDato;
+                }
+                
+                private TableRow FilaTotalGrupo (String tituloTotales, ArrayList<String> columnasConResumen){
+                    TableRow rowResumenGrupo = new TableRow(GridDatos.this.contexto);
+                    TextView celdaAgrup = new TextView (GridDatos.this.contexto);
+
+                    celdaAgrup.setMaxLines(1);
+                    celdaAgrup.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));                                
+                    ((TableRow.LayoutParams)celdaAgrup.getLayoutParams()).span = GridDatos.this.columnas.size();
+                    celdaAgrup.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion);
+                    celdaAgrup.setText(tituloTotales);
+                    if (!GridDatos.this.colorFondoFilaAgrupacionSolido){
+                        int []coloresCabecera = new int[2]; coloresCabecera[0] = GridDatos.this.colorFilaAgrupacion; coloresCabecera[1] = Color.TRANSPARENT;
+                        GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
+                        celdaAgrup.setBackgroundDrawable(gd);
+                    }else{
+                        celdaAgrup.setBackgroundColor(GridDatos.this.colorFilaAgrupacion);
+                    }
+                    celdaAgrup.setTextColor(GridDatos.this.colorTextoAgrupacion);
+
+                    rowResumenGrupo.addView(celdaAgrup);
+                    
+                    return rowResumenGrupo;
+                }
+                
                 private ProgressDialog dlgProgreso;
                 @Override
                 protected void onPreExecute()
@@ -319,8 +462,7 @@ public class GridDatos extends LinearLayout
                     progreso.setVisibility(TableRow.VISIBLE);
                     TableRow rowRefresh = new TableRow(GridDatos.this.contexto);
                     GridDatos.this.tablaDatos.removeAllViews();
-                    rowRefresh.addView(progreso);
-                    //GridDatos.this.tablaDatos.addView(rowRefresh);
+                    rowRefresh.addView(progreso);                    
                 }
                 
                 @Override
@@ -330,144 +472,19 @@ public class GridDatos extends LinearLayout
                     int i = 0;
                     if (GridDatos.this.vistaDatos != null){
                         for(String vAgrup : GridDatos.this.vistaDatos.keySet()){
-                            if (!vAgrup.trim().isEmpty()){
-                                // Como estamos ante una agrupación, pintamos la agrupación...
-                                TableRow filaAgrup = new TableRow(GridDatos.this.contexto);
+                            if (!vAgrup.trim().isEmpty()) filas.add(this.FilaAgrupacion(vAgrup));
                                 
-                                TextView celdaAgrup = new TextView(GridDatos.this.contexto);
-                                celdaAgrup.setMaxLines(1);
-                                celdaAgrup.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));
-                                ((TableRow.LayoutParams)celdaAgrup.getLayoutParams()).span = GridDatos.this.columnas.size();
-                                celdaAgrup.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion);
-                                celdaAgrup.setText(vAgrup);
-                                if (!GridDatos.this.colorFondoFilaAgrupacionSolido){
-                                    int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = GridDatos.this.colorFilaAgrupacion;
-                                    GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
-                                    celdaAgrup.setBackgroundDrawable(gd);
-                                }else{
-                                    celdaAgrup.setBackgroundColor(GridDatos.this.colorFilaAgrupacion);
-                                }
-                                celdaAgrup.setTextColor(GridDatos.this.colorTextoAgrupacion);
-                                
-                                filaAgrup.addView(celdaAgrup);
-                                filas.add(filaAgrup);
-                                
-                            }
-                            
                             for(JsonObject dato : GridDatos.this.vistaDatos.get(vAgrup))
-                            {
-                                TableRow filaDato = new TableRow(GridDatos.this.contexto);
-                                
-                                //<editor-fold defaultstate="collapsed" desc="Carga de datos por grupo">
-                                
-                                for(ColumnaGridDatos columna : GridDatos.this.columnas){
-                                    
-                                    TextView celda = new TextView (GridDatos.this.contexto);
-                                    celda.setTextSize(TypedValue.COMPLEX_UNIT_SP, columna.getTamFuenteTitulo());
-                                    celda.setTextColor(columna.getColorTextoDatos());
-                                    
-                                    celda.setPadding(GridDatos.this.separacionCeldasIzquierda, GridDatos.this.separacionCeldasArriba, GridDatos.this.separacionCeldasDerecha, GridDatos.this.separacionCeldasAbajo);
-                                    
-                                    TableRow.LayoutParams layout = new TableRow.LayoutParams(columna.getAnchoColumna() * 7 * (int)GridDatos.this.densidad, TableRow.LayoutParams.MATCH_PARENT);
-                                    layout.leftMargin = GridDatos.this.margenCeldasIzquierda; layout.bottomMargin = GridDatos.this.margenCeldasAbajo;
-                                    layout.rightMargin = GridDatos.this.margenCeldasDerecha; layout.topMargin = GridDatos.this.margenCeldasArriba;
-                                    celda.setLayoutParams(layout);
-                                    ArrayList<Integer> coloresFondo = new ArrayList<Integer>();
-                                    int colorFondo = i % 2 == 0? GridDatos.this.colorFilaPar : GridDatos.this.colorFilaImpar;
-                                    
-                                    if (colorFondo != Color.TRANSPARENT) coloresFondo.add(colorFondo);
-                                    if (columna.getColorFondoDatos() != Color.TRANSPARENT)
-                                        coloresFondo.add(columna.getColorFondoDatos());
-                                    if (coloresFondo.size() > 1){
-                                        int [] c = new int[coloresFondo.size()];
-                                        int idx = 0;
-                                        for(int c1 : coloresFondo)  c[idx++] = c1;
-                                        GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, c);
-                                        celda.setBackgroundDrawable(gd);
-                                    }else{
-                                        int cFondo = columna.getColorFondoDatos() != Color.TRANSPARENT? columna.getColorFondoDatos() : colorFondo;
-                                        
-                                        if (!GridDatos.this.colorFondoDatosSolido){
-                                            int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = cFondo;
-                                            GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
-                                            celda.setBackgroundDrawable(gd);
-                                        }else{
-                                            celda.setBackgroundColor(cFondo);
-                                        }
-                                    }
-                                    celda.setGravity(columna.getAlineacionCabecera().value());
-                                    celda.setVisibility(columna.isVisible() ? TextView.VISIBLE : TextView.GONE);
-                                    if (columna.getTipoDatoColumna() == TipoDatoColumna.Boolean){
-                                        celda.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-                                        celda.setGravity(Gravity.CENTER);
-                                        celda.setText(dato.get(columna.getNombreColumna()).getAsBoolean() ? "x" : "");
-                                    }else{
-                                        //<editor-fold defaultstate="collapsed" desc="Formateo de datos">
-                                        String texto = "";
-                                        switch (columna.getTipoDatoColumna()){
-                                            case NumeroEntero:
-                                            {
-                                                int valorNum = 0;
-                                                texto = "NaN";
-                                                try{
-                                                    valorNum = Integer.parseInt(dato.get(columna.getNombreColumna()).getAsString());
-                                                    texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
-                                                }catch (Exception ex){
-                                                    
-                                                }
-                                                break;
-                                            }
-                                            case NumeroDecimal:
-                                            {
-                                                float valorNum = 0;
-                                                texto = "NaN";
-                                                try{
-                                                    valorNum = Float.parseFloat(dato.get(columna.getNombreColumna()).getAsString());
-                                                    texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
-                                                }catch (Exception ex){
-                                                    
-                                                }
-                                                
-                                                break;
-                                            }
-                                            case Fecha:
-                                            {
-                                                Date fecha = null;
-                                                texto = "NaD";
-                                                try{
-                                                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-                                                    
-                                                    fecha = sdf.parse(dato.get(columna.getNombreColumna()).getAsString());
-                                                    // Si se ha podido crear la fecha, la formateamos a lo que deseemos...
-                                                    texto = columna.getFormatoDatosColumna().trim().isEmpty()? sdf.format(fecha) :  new SimpleDateFormat(columna.getFormatoDatosColumna()).format(fecha);
-                                                }catch(Exception ex){
-                                                    
-                                                }
-                                                break;
-                                            }
-                                            case Texto:
-                                                texto = dato.get(columna.getNombreColumna()).getAsString();
-                                                break;                                            
-                                        }
-                                        if (columna.getTipoDatoColumna() != TipoDatoColumna.Boolean) celda.setGravity(columna.getAlineacionDatos().value());
-                                        celda.setText(texto);
-                                        //</editor-fold>
-                                        
-                                    }
-                                    filaDato.addView(celda);
-                                }
-                                //</editor-fold>
-                                
-                                filas.add(filaDato);    
-                                i++;
+                            {                                
+                                filas.add(this.FilaDatos(dato, i++));                                    
                             }
                             // Si se debe mostrar un resumen de grupos...
-                            if (GridDatos.this.mostrarResumenGrupos && GridDatos.this.columnasAgrupacion.size() > 0){
-                                
+                            if (GridDatos.this.mostrarResumenGrupos && GridDatos.this.columnasAgrupacion.size() > 0){                                
+                                filas.add(this.FilaTotalGrupo(String.format("Total Grupo %s:", vAgrup), new ArrayList<String>()));
                             }
                         }
                         if (GridDatos.this.mostrarResumenGeneral){
-                            
+                            filas.add(this.FilaTotalGrupo("Total General:", new ArrayList<String>()));
                         }
                     }
                     return filas;
@@ -809,6 +826,7 @@ public class GridDatos extends LinearLayout
     }
     
     //</editor-fold>
+    
     //<editor-fold defaultstate="collapsed" desc="Métodos sobrecargados">
     @Override
     protected void onRestoreInstanceState(Parcelable state)
@@ -836,9 +854,7 @@ public class GridDatos extends LinearLayout
         bundle.putStringArrayList("ColumnasAgrupacion", columnasAgrupacion);
         return bundle;
     }
-    
-    
-    
+            
     /**
      *
      * @param changed

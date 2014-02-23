@@ -10,7 +10,7 @@
                             android:id="@+id/gridDatos"
                             android:background="#c3d3e3"
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
+                            android:layout_height="match_parent"                            
                             tarsys:colorFondoCabeceraSolido="false"
                             tarsys:colorFondoDatosSolido="true"
                             tarsys:colorFondoFilaAgrupacionSolido="false"
@@ -26,6 +26,8 @@
                             tarsys:margenCeldasArriba="2dp"
                             tarsys:textoProgresoCarga="Cargando datos..."
                             tarsys:tituloProgresoCarga=""
+                            tarsys:mostrarResumenGrupos="true"
+                            tarsys:mostrarResumenGeneral="true"
 />
 </LinearLayout>
 
