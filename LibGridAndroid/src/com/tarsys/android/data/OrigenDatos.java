@@ -9,6 +9,8 @@ package com.tarsys.android.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -23,8 +25,7 @@ public class OrigenDatos implements Serializable, Iterable<JsonObject>
     //<editor-fold defaultstate="collapsed" desc="Variables privadas a la clase">
     
     private final ArrayList<String> columnas = new ArrayList<String>();
-    private JsonArray datos = new JsonArray();
-
+    private String datosJson = "";    
     //</editor-fold>        
     
     //<editor-fold defaultstate="collapsed" desc="Métodos públicos de la clase">
@@ -42,16 +43,8 @@ public class OrigenDatos implements Serializable, Iterable<JsonObject>
      * @return
      */
     public int size(){
-        return this.datos.size();
-    }
-    
-    /**
-     * Obtiene el dato de la posición i-esima
-     * @param i
-     * @return Dato en la posición i-ésima, null en caso de índice incorrecto
-     */
-    public JsonObject getDato(int i){
-        return i >= 0 && i < this.size() ? this.datos.get(i).getAsJsonObject() : null;
+        
+        return this.getDatos().size();
     }
     
     /**
@@ -59,7 +52,26 @@ public class OrigenDatos implements Serializable, Iterable<JsonObject>
      * @return
      */
     public JsonArray getDatos() {
+        JsonArray datos = new JsonArray();
+        try{
+            if (!this.datosJson.isEmpty()) datos = new JsonParser().parse(this.datosJson).getAsJsonArray();
+        }catch(JsonSyntaxException ex){
+            
+        }
         return datos;
+    }
+    
+    public void addDato(JsonObject item){
+        JsonArray datos = this.getDatos();
+        
+        if (this.columnas.isEmpty()){
+            if (item != null){
+                for (Map.Entry<String, JsonElement>e : item.entrySet()) this.columnas.add(e.getKey());                    
+            }
+        }
+        datos.add(item);
+        
+        this.datosJson = datos.toString();
     }
     
     //</editor-fold>
@@ -75,12 +87,10 @@ public class OrigenDatos implements Serializable, Iterable<JsonObject>
             try{
                 JsonObject obj = jArray.get(0).getAsJsonObject();
                 if (obj != null){
-                    for (Map.Entry<String, JsonElement>e : obj.entrySet()) this.columnas.add(e.getKey());
-                    
+                    for (Map.Entry<String, JsonElement>e : obj.entrySet()) this.columnas.add(e.getKey());                    
                 }
-                this.datos = jArray;
-            }catch(Exception ex){
-                this.datos = new JsonArray();
+                this.datosJson = jArray.toString();                
+            }catch(Exception ex){                
             }
         }
     }
@@ -91,17 +101,18 @@ public class OrigenDatos implements Serializable, Iterable<JsonObject>
     
     public Iterator<JsonObject> iterator() {
         Iterator<JsonObject> it = new Iterator<JsonObject>() {
+            private final JsonArray datos = OrigenDatos.this.getDatos();
             
             private int currentIndex = 0;
             
             @Override
             public boolean hasNext() {
-                return currentIndex < OrigenDatos.this.datos.size() && OrigenDatos.this.datos.get(currentIndex) != null;
+                return currentIndex < this.datos.size() && this.datos.get(currentIndex) != null;
             }
             
             @Override
             public JsonObject next() {
-                return OrigenDatos.this.datos.get(currentIndex++).getAsJsonObject();
+                return this.datos.get(currentIndex++).getAsJsonObject();
             }
             
             @Override
@@ -109,8 +120,7 @@ public class OrigenDatos implements Serializable, Iterable<JsonObject>
                 // TODO Auto-generated method stub
             }
         };
-        return it;
-        
+        return it;        
     }
     
     //</editor-fold>

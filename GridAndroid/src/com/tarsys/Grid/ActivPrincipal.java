@@ -30,20 +30,20 @@ public class ActivPrincipal extends Activity
             
             //<editor-fold defaultstate="collapsed" desc="Columnas del grid">
             
-            ColumnaGridDatos colX = new ColumnaGridDatos("Seleccion", TipoDatoColumna.Boolean, "X",5);
+            ColumnaGridDatos colX = new ColumnaGridDatos("Seleccion", TipoDatoColumna.Boolean, "X",5,false, 1);
             colX.setColorFondoCabecera(Color.GRAY);                        
             
-            ColumnaGridDatos colCodigo = new ColumnaGridDatos("Cuenta", TipoDatoColumna.Texto, "Código",16);
+            ColumnaGridDatos colCodigo = new ColumnaGridDatos("Cuenta", TipoDatoColumna.Texto, "Código",16,true,2);
             colCodigo.setColorFondoCabecera(Color.GRAY);
             
-            ColumnaGridDatos colNombre = new ColumnaGridDatos("Nombre", TipoDatoColumna.Texto, "Nombre",50);
+            ColumnaGridDatos colNombre = new ColumnaGridDatos("Nombre", TipoDatoColumna.Texto, "Nombre",50,false,3);
             colNombre.setColorFondoCabecera(Color.GRAY);
             
-            ColumnaGridDatos colValor = new ColumnaGridDatos("Valor", TipoDatoColumna.NumeroDecimal, "Valor",18);
+            ColumnaGridDatos colValor = new ColumnaGridDatos("Valor", TipoDatoColumna.NumeroDecimal, "Valor",18,false, 4);
             colValor.setFormatoDatosColumna("#,##0.00 €");
+            colValor.setTipoResumenColumna(TipoResumenColumna.Sumatorio);
             colValor.setColorFondoCabecera(Color.GRAY);
             colValor.setAlineacionDatos(AlineacionDatos.Derecha);
-            colValor.setTipoResumenColumna(TipoResumenColumna.Sumatorio);
             
             gridDatos.addColumna(colX);
             gridDatos.addColumna(colCodigo);

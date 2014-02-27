@@ -17,6 +17,7 @@ public enum TipoResumenColumna
     MediaAritmetica,
     Maximo,
     Minimo,
-    Recuento
+    Recuento,
+    Formula
     
 }

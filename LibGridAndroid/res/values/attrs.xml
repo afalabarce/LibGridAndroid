@@ -6,6 +6,8 @@
         <attr name="colorFondoFilaAgrupacionSolido" format="boolean" />
         <attr name="mostrarResumenGrupos" format="boolean" />
         <attr name="mostrarResumenGeneral" format="boolean" />
+        <attr name="mostrarPanelAgrupacion" format="boolean" />
+        
         
         <attr name="colorFilaImpar" format="color" />
         <attr name="colorFilaPar" format="color" />

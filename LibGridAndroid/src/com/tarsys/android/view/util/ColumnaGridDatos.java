@@ -41,23 +41,23 @@ public class ColumnaGridDatos implements Serializable
     private boolean negritaTexto;
     private boolean cursivaTitulo;
     private boolean cursivaTexto;
-
+    private int posicion;
     private boolean columnaAgrupacion;
     private TipoResumenColumna tipoResumenColumna = TipoResumenColumna.SinResumen;
-    
+    private String formulaResumen = "";
     private boolean visible = true;
 
-    public ColumnaGridDatos(String nombreColumna, TipoDatoColumna tipoCol, String tituloCol, int anchoColumna)
+    public ColumnaGridDatos(String nombreColumna, TipoDatoColumna tipoCol, String tituloCol, int anchoColumna, boolean agrupacion, int orden)
     {
         this.nombreColumna = nombreColumna;
         this.anchoColumna = anchoColumna;
-        
+        this.posicion = orden;
         this.colorFondoCabecera = Color.TRANSPARENT;
         this.colorTextoCabecera = Color.BLACK;
         this.colorFondoDatos = Color.TRANSPARENT;
         this.colorTextoDatos = Color.BLACK;
 
-        this.columnaAgrupacion = false;
+        this.columnaAgrupacion = agrupacion;
 
         this.cursivaTexto = false;
         this.cursivaTitulo = false;
@@ -86,6 +86,25 @@ public class ColumnaGridDatos implements Serializable
         return tipoResumenColumna;
     }
 
+    public int getPosicion()
+    {
+        return posicion;
+    }
+
+    public void setPosicion(int posicion)
+    {
+        this.posicion = posicion;
+    }
+
+    public String getFormulaResumen() {
+        return formulaResumen;
+    }
+
+    public void setFormulaResumen(String formulaResumen) {
+        this.formulaResumen = formulaResumen;
+    }
+
+    
     public void setTipoResumenColumna(TipoResumenColumna tipoResumenColumna)
     {
         this.tipoResumenColumna = tipoResumenColumna;
@@ -218,7 +237,7 @@ public class ColumnaGridDatos implements Serializable
 
     public String getTitulo()
     {
-        return titulo == null || (titulo != null && titulo.trim().equals("")) ? this.nombreColumna : this.titulo;
+        return titulo == null || (titulo != null && titulo.trim().equals("")) ? this.nombreColumna.trim() : this.titulo.trim();
     }
 
     public void setTitulo(String titulo)

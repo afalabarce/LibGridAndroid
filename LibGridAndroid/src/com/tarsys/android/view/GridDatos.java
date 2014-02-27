@@ -6,11 +6,11 @@
 
 package com.tarsys.android.view;
 
-import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.AsyncTask;
@@ -22,7 +22,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -31,20 +30,26 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.tarsys.android.data.OrigenDatos;
 import com.tarsys.android.view.listeners.ClickHeaderListener;
+import com.tarsys.android.view.listeners.ClickRowListener;
 import com.tarsys.android.view.util.ColumnaGridDatos;
 import com.tarsys.android.view.util.TipoDatoColumna;
+import com.tarsys.android.view.util.TipoResumenColumna;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  *
- * @author tatributosrratributosdelo
+ * @author TaRSyS
  */
 public class GridDatos extends LinearLayout
 {
@@ -90,6 +95,7 @@ public class GridDatos extends LinearLayout
     
     private boolean mostrarResumenGrupos = false;
     private boolean mostrarResumenGeneral = false;
+    private boolean mostrarPanelAgrupacion = true;
     
     private ArrayList<String>columnasAgrupacion;
     //</editor-fold>
@@ -134,7 +140,8 @@ public class GridDatos extends LinearLayout
         
         this.mostrarResumenGrupos = atributos.getBoolean(R.styleable.GridDatos_mostrarResumenGrupos, false);
         this.mostrarResumenGeneral = atributos.getBoolean(R.styleable.GridDatos_mostrarResumenGeneral, false);
-        this.columnasAgrupacion = new ArrayList<String>();
+        this.mostrarPanelAgrupacion = atributos.getBoolean(R.styleable.GridDatos_mostrarPanelAgrupacion, true);
+        this.columnasAgrupacion = new ArrayList<String>();        
         this.InicializarObjetos();
     }
     
@@ -143,15 +150,24 @@ public class GridDatos extends LinearLayout
     
     //<editor-fold defaultstate="collapsed" desc="Controladores de eventos">
     
-    private ClickHeaderListener controladorColumnas;
+    private static ClickHeaderListener controladorColumnas;
     public ClickHeaderListener getControladorColumnas()
     {
-        return controladorColumnas;
+        return GridDatos.controladorColumnas;
     }
 
     public void setControladorColumnas(ClickHeaderListener controladorColumnas)
     {
-        this.controladorColumnas = controladorColumnas;
+        GridDatos.controladorColumnas = controladorColumnas;
+    }
+    
+    private static ClickRowListener clickFilas;
+    public ClickRowListener getClickFilas() {
+        return GridDatos.clickFilas;
+    }
+
+    public void setClickFilas(ClickRowListener clickFilas) {
+        GridDatos.clickFilas = clickFilas;
     }
     
     //</editor-fold>
@@ -167,6 +183,7 @@ public class GridDatos extends LinearLayout
     }
     
     private void RefrescarPanelGrupos(){        
+        if (!this.mostrarPanelAgrupacion) this.lytPanelGrupos.setVisibility(LinearLayout.GONE);
         this.lytPanelGrupos.removeAllViews();
         for(String colAgrup : this.columnasAgrupacion){
             TextView btnCol = new TextView (this.contexto);
@@ -174,7 +191,7 @@ public class GridDatos extends LinearLayout
             
             btnCol.setText(col.getTitulo());
             btnCol.setTextColor(Color.BLACK);
-            btnCol.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            btnCol.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion / densidad);
             btnCol.setTag(col);
             int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = GridDatos.this.colorFilaAgrupacion;
             GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
@@ -203,33 +220,34 @@ public class GridDatos extends LinearLayout
     }
     
     private void InicializarObjetos(){
-        this.removeAllViews();
-        this.refrescarDatos = true;
+        this.removeAllViews();        
+        this.refrescarDatos = false;
+        
         this.lytPanelGrupos = new LinearLayout(this.contexto);
         this.lytPanelGrupos.setOrientation(LinearLayout.HORIZONTAL);
         this.lytPanelGrupos.setBackgroundColor(Color.LTGRAY);
+        
         this.hScroller = new HorizontalScrollView(this.contexto);
         this.hScroller.setScrollBarStyle(HorizontalScrollView.SCROLLBARS_OUTSIDE_OVERLAY);
         this.vScroller = new ScrollView(this.contexto);
         this.lytTabular = new LinearLayout(this.contexto);
         this.tablaCabecera = new TableLayout(this.contexto);
         this.tablaDatos = new TableLayout(this.contexto);        
-        
-        this.lytTabular.setVisibility(LinearLayout.VISIBLE);
-        this.tablaCabecera.setVisibility(TableLayout.VISIBLE);
-        this.vScroller.setVisibility(ScrollView.VISIBLE);
-        this.tablaDatos.setVisibility(TableLayout.VISIBLE);
-        
+                        
         this.lytTabular.setOrientation(LinearLayout.VERTICAL);
         this.lytTabular.addView(this.tablaCabecera,0, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         this.vScroller.addView(this.tablaDatos, new ScrollView.LayoutParams(ScrollView.LayoutParams.WRAP_CONTENT, ScrollView.LayoutParams.WRAP_CONTENT));
         
         this.lytTabular.addView(this.vScroller, 1, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         
+        this.hScroller.setVisibility(HorizontalScrollView.VISIBLE);
+        this.lytTabular.setVisibility(LinearLayout.VISIBLE);
+        this.tablaCabecera.setVisibility(TableLayout.VISIBLE);
+        this.vScroller.setVisibility(ScrollView.VISIBLE);
+        this.tablaDatos.setVisibility(TableLayout.VISIBLE);
+        
         // Agregamos el linear laout al horizontal scroller...
         this.hScroller.addView(this.lytTabular, new HorizontalScrollView.LayoutParams(HorizontalScrollView.LayoutParams.WRAP_CONTENT,HorizontalScrollView.LayoutParams.WRAP_CONTENT));
-        this.addView(this.lytPanelGrupos, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
-        this.addView(this.hScroller, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT));
         
         this.EstablecerPadding();
     }
@@ -258,7 +276,10 @@ public class GridDatos extends LinearLayout
     private void CargarDatos()
     {
         this.refrescarDatos = false;
-        if (this.columnas != null && this.columnas.size() > 0){
+        this.removeAllViews();
+        this.InicializarObjetos();
+        if (this.columnas != null && this.columnas.size() > 0){  
+            
             this.RefrescarPanelGrupos();
             // Si tenemos columnas, lo primero, es preparar el header...
             
@@ -270,7 +291,10 @@ public class GridDatos extends LinearLayout
             for(ColumnaGridDatos columna : this.columnas){
                 TextView celda = new TextView (this.contexto);
                 celda.setTextSize(TypedValue.COMPLEX_UNIT_SP, columna.getTamFuenteTitulo());
-                
+                int estiloBold = columna.isNegritaTexto() ? Typeface.BOLD : Typeface.NORMAL;
+                int estiloItalic = columna.isCursivaTexto() ? Typeface.ITALIC : Typeface.NORMAL;
+                if (columna.isSubrayadoTexto()) celda.setPaintFlags(Paint.UNDERLINE_TEXT_FLAG);
+                celda.setTypeface(celda.getTypeface(), estiloBold | estiloItalic);
                 if (!this.colorFondoCabeceraSolido){
                     int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = columna.getColorFondoCabecera();
                     GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
@@ -290,12 +314,12 @@ public class GridDatos extends LinearLayout
                 celda.setVisibility(columna.isVisible() ? TextView.VISIBLE : TextView.GONE);
                 celda.setTag(columna);
                 celda.setText(columna.getTitulo());
-                if (this.controladorColumnas != null){
+                if (GridDatos.controladorColumnas != null){
                     celda.setOnClickListener(new OnClickListener() {
                         
                         public void onClick(View arg0)
                         {
-                            controladorColumnas.Click(GridDatos.this, (ColumnaGridDatos)arg0.getTag());
+                            GridDatos.controladorColumnas.Click(GridDatos.this, (ColumnaGridDatos)arg0.getTag());
                         }
                     });
                 }
@@ -303,7 +327,7 @@ public class GridDatos extends LinearLayout
             }
             // Para terminar, agregamos el row atributos la tabla de cabecera
             this.tablaCabecera.addView(rowHeader, new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT));
-            
+            this.tablaCabecera.setVisibility(TableLayout.VISIBLE);
             //</editor-fold>
             
             // Agregamos los datos
@@ -314,9 +338,11 @@ public class GridDatos extends LinearLayout
                     
                     TextView celdaAgrup = new TextView(GridDatos.this.contexto);
                     celdaAgrup.setMaxLines(1);
-                    celdaAgrup.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));
+                    celdaAgrup.setPadding(GridDatos.this.separacionCeldasIzquierda, GridDatos.this.separacionCeldasArriba, GridDatos.this.separacionCeldasDerecha, GridDatos.this.separacionCeldasAbajo);
+                    celdaAgrup.setTypeface(celdaAgrup.getTypeface(), Typeface.BOLD);
+                    celdaAgrup.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
                     ((TableRow.LayoutParams)celdaAgrup.getLayoutParams()).span = GridDatos.this.columnas.size();
-                    celdaAgrup.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion);
+                    celdaAgrup.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion / densidad);
                     celdaAgrup.setText(textoAgrupacion);
                     if (!GridDatos.this.colorFondoFilaAgrupacionSolido){
                         int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = GridDatos.this.colorFilaAgrupacion;
@@ -331,15 +357,24 @@ public class GridDatos extends LinearLayout
                     return filaAgrup;
                 }
                 
-                private TableRow FilaDatos (JsonObject dato, int idx){
+                private TableRow FilaDatos (final JsonObject dato, int idx){
                     TableRow filaDato = new TableRow(GridDatos.this.contexto);
-                                                    
-                    for(ColumnaGridDatos columna : GridDatos.this.columnas){
-
+                    
+                    for(final ColumnaGridDatos columna : GridDatos.this.columnas){                                                
                         TextView celda = new TextView (GridDatos.this.contexto);
-                        celda.setTextSize(TypedValue.COMPLEX_UNIT_SP, columna.getTamFuenteTitulo());
+                        celda.setTextSize(TypedValue.COMPLEX_UNIT_SP, columna.getTamFuenteCelda());
+                        int estiloBold = columna.isNegritaTexto() ? Typeface.BOLD : Typeface.NORMAL;
+                        int estiloItalic = columna.isCursivaTexto() ? Typeface.ITALIC : Typeface.NORMAL;
+                        if (columna.isSubrayadoTexto()) celda.setPaintFlags(Paint.UNDERLINE_TEXT_FLAG);
+                        celda.setTypeface(celda.getTypeface(), estiloBold | estiloItalic);
                         celda.setTextColor(columna.getColorTextoDatos());
-
+                        if (GridDatos.clickFilas != null)                     {
+                            celda.setOnClickListener(new OnClickListener() {
+                                public void onClick(View arg0) {
+                                    GridDatos.clickFilas.Click(GridDatos.this, dato, columna);
+                                }
+                            });
+                        }
                         celda.setPadding(GridDatos.this.separacionCeldasIzquierda, GridDatos.this.separacionCeldasArriba, GridDatos.this.separacionCeldasDerecha, GridDatos.this.separacionCeldasAbajo);
 
                         TableRow.LayoutParams layout = new TableRow.LayoutParams(columna.getAnchoColumna() * 7 * (int)GridDatos.this.densidad, TableRow.LayoutParams.MATCH_PARENT);
@@ -378,44 +413,46 @@ public class GridDatos extends LinearLayout
                         }else{
                             //<editor-fold defaultstate="collapsed" desc="Formateo de datos">
                             String texto = "";
-                            switch (columna.getTipoDatoColumna()){
-                                case NumeroEntero:
-                                {
-                                    try{
-                                        int valorNum = Integer.parseInt(dato.get(columna.getNombreColumna()).getAsString());
-                                        texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
-                                    }catch (NumberFormatException ex){
-                                        texto = "NaN";
+                            if (!dato.get(columna.getNombreColumna()).isJsonNull()){
+                                switch (columna.getTipoDatoColumna()){
+                                    case NumeroEntero:
+                                    {
+                                        try{
+                                            int valorNum = dato.get(columna.getNombreColumna()).getAsInt();
+                                            texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
+                                        }catch (NumberFormatException ex){
+                                            texto = "NaN";
+                                        }
+                                        break;
                                     }
-                                    break;
-                                }
-                                case NumeroDecimal:
-                                {
-                                    try{
-                                        float valorNum = Float.parseFloat(dato.get(columna.getNombreColumna()).getAsString());
-                                        texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
-                                    }catch (NumberFormatException ex){
-                                        texto = "NaN";
-                                    }
+                                    case NumeroDecimal:
+                                    {
+                                        try{
+                                            float valorNum = dato.get(columna.getNombreColumna()).getAsFloat();
+                                            texto = columna.getFormatoDatosColumna().trim().isEmpty()? dato.get(columna.getNombreColumna()).getAsString() :  new DecimalFormat(columna.getFormatoDatosColumna()).format(valorNum);
+                                        }catch (NumberFormatException ex){
+                                            texto = "NaN";
+                                        }
 
-                                    break;
-                                }
-                                case Fecha:
-                                {                                                                                                
-                                    try{
-                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-
-                                        Date fecha = sdf.parse(dato.get(columna.getNombreColumna()).getAsString());
-                                        // Si se ha podido crear la fecha, la formateamos a lo que deseemos...
-                                        texto = columna.getFormatoDatosColumna().trim().isEmpty()? sdf.format(fecha) :  new SimpleDateFormat(columna.getFormatoDatosColumna()).format(fecha);
-                                    }catch(ParseException ex){
-                                        texto = "NaD";
+                                        break;
                                     }
-                                    break;
+                                    case Fecha:
+                                    {                                                                                                
+                                        try{
+                                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+                                            Date fecha = sdf.parse(dato.get(columna.getNombreColumna()).getAsString());
+                                            // Si se ha podido crear la fecha, la formateamos a lo que deseemos...
+                                            texto = columna.getFormatoDatosColumna().trim().isEmpty()? sdf.format(fecha) :  new SimpleDateFormat(columna.getFormatoDatosColumna()).format(fecha);
+                                        }catch(ParseException ex){
+                                            texto = "NaD";
+                                        }
+                                        break;
+                                    }
+                                    case Texto:
+                                        texto = dato.get(columna.getNombreColumna()).isJsonNull()? "" : dato.get(columna.getNombreColumna()).getAsString();
+                                        break;                                            
                                 }
-                                case Texto:
-                                    texto = dato.get(columna.getNombreColumna()).getAsString();
-                                    break;                                            
                             }
                             if (columna.getTipoDatoColumna() != TipoDatoColumna.Boolean) celda.setGravity(columna.getAlineacionDatos().value());
                             celda.setText(texto);
@@ -427,26 +464,124 @@ public class GridDatos extends LinearLayout
                     return filaDato;
                 }
                 
-                private TableRow FilaTotalGrupo (String tituloTotales, ArrayList<String> columnasConResumen){
+                private TableRow FilaTotalGrupo (String tituloTotales, OrigenDatos datosGrupo, ArrayList<ColumnaGridDatos> columnasConResumen){
                     TableRow rowResumenGrupo = new TableRow(GridDatos.this.contexto);
-                    TextView celdaAgrup = new TextView (GridDatos.this.contexto);
+                    if (columnasConResumen.size()>0){                    
+                        TextView celdaAgrup = new TextView (GridDatos.this.contexto);
+                        int nInvisibles = 0;
+                        for (ColumnaGridDatos colAgrup : GridDatos.this.columnas){                                                        
+                            if (colAgrup.getPosicion() >= columnasConResumen.get(0).getPosicion()) break;
+                            nInvisibles += !colAgrup.isVisible() && !colAgrup.isColumnaAgrupacion()?1:0;
+                        }
+                        celdaAgrup.setTypeface(celdaAgrup.getTypeface(), Typeface.BOLD);
+                        celdaAgrup.setMaxLines(1);
+                        celdaAgrup.setPadding(GridDatos.this.separacionCeldasIzquierda, GridDatos.this.separacionCeldasArriba, GridDatos.this.separacionCeldasDerecha, GridDatos.this.separacionCeldasAbajo);
+                        TableRow.LayoutParams layoutAgrup = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT);
+                        layoutAgrup.leftMargin = GridDatos.this.margenCeldasIzquierda; layoutAgrup.bottomMargin = GridDatos.this.margenCeldasAbajo;
+                        layoutAgrup.rightMargin = GridDatos.this.margenCeldasDerecha; layoutAgrup.topMargin = GridDatos.this.margenCeldasArriba;
+                        celdaAgrup.setLayoutParams(layoutAgrup);
+                        ((TableRow.LayoutParams)celdaAgrup.getLayoutParams()).span = columnasConResumen.get(0).getPosicion() - 1 + nInvisibles; //GridDatos.this.columnas.size();
+                        celdaAgrup.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion / densidad);
+                        celdaAgrup.setText(tituloTotales);
+                        if (!GridDatos.this.colorFondoFilaAgrupacionSolido){
+                            int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = GridDatos.this.colorFilaAgrupacion;
+                            GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
+                            celdaAgrup.setBackgroundDrawable(gd);
+                        }else{
+                            celdaAgrup.setBackgroundColor(GridDatos.this.colorFilaAgrupacion);
+                        }
+                        celdaAgrup.setTextColor(GridDatos.this.colorTextoAgrupacion);
 
-                    celdaAgrup.setMaxLines(1);
-                    celdaAgrup.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));                                
-                    ((TableRow.LayoutParams)celdaAgrup.getLayoutParams()).span = GridDatos.this.columnas.size();
-                    celdaAgrup.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion);
-                    celdaAgrup.setText(tituloTotales);
-                    if (!GridDatos.this.colorFondoFilaAgrupacionSolido){
-                        int []coloresCabecera = new int[2]; coloresCabecera[0] = GridDatos.this.colorFilaAgrupacion; coloresCabecera[1] = Color.TRANSPARENT;
-                        GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
-                        celdaAgrup.setBackgroundDrawable(gd);
-                    }else{
-                        celdaAgrup.setBackgroundColor(GridDatos.this.colorFilaAgrupacion);
+                        rowResumenGrupo.addView(celdaAgrup);
+                        // Una vez hemos agregado la celda de título de grupo, agregaremos las de totalización...
+                        
+                        for (ColumnaGridDatos colAgrup : GridDatos.this.columnas){
+                            
+                            if (colAgrup.getPosicion() >= columnasConResumen.get(0).getPosicion()){
+                                TextView celdaTotal = new TextView (GridDatos.this.contexto);
+                                celdaTotal.setMaxLines(1);
+                                celdaTotal.setTypeface(celdaAgrup.getTypeface(), Typeface.BOLD);
+                                celdaTotal.setPadding(GridDatos.this.separacionCeldasIzquierda, GridDatos.this.separacionCeldasArriba, GridDatos.this.separacionCeldasDerecha, GridDatos.this.separacionCeldasAbajo);
+                                TableRow.LayoutParams layout = new TableRow.LayoutParams(colAgrup.getAnchoColumna() * 7 * (int)GridDatos.this.densidad, TableRow.LayoutParams.MATCH_PARENT);
+                                layout.leftMargin = GridDatos.this.margenCeldasIzquierda; layout.bottomMargin = GridDatos.this.margenCeldasAbajo;
+                                layout.rightMargin = GridDatos.this.margenCeldasDerecha; layout.topMargin = GridDatos.this.margenCeldasArriba;
+                                celdaTotal.setVisibility(colAgrup.isVisible()? TextView.VISIBLE : TextView.GONE);
+                                celdaTotal.setLayoutParams(layout);                                
+                                celdaTotal.setTextSize(TypedValue.COMPLEX_UNIT_SP, GridDatos.this.tamTextoAgrupacion / densidad);                                
+                                if (!GridDatos.this.colorFondoFilaAgrupacionSolido){
+                                    int []coloresCabecera = new int[2]; coloresCabecera[0] = Color.TRANSPARENT; coloresCabecera[1] = GridDatos.this.colorFilaAgrupacion;
+                                    GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, coloresCabecera);
+                                    celdaTotal.setBackgroundDrawable(gd);
+                                }else{
+                                    celdaTotal.setBackgroundColor(GridDatos.this.colorFilaAgrupacion);
+                                }
+                                celdaTotal.setTextColor(GridDatos.this.colorTextoAgrupacion);                                
+                                if (colAgrup.getTipoResumenColumna() != TipoResumenColumna.SinResumen){
+                                    double valor = 0;
+                                    HashMap<String, Double> valoresFormula = new HashMap<String, Double>();
+                                    String operadorFormula = "";
+                                    if (colAgrup.getTipoResumenColumna() == TipoResumenColumna.Formula){
+                                        // Como es una formula, sacamos operando y operador
+                                        String rFormula = "\\s*(\\w+)\\s*([\\+|\\-|\\*|\\/])\\s*(\\w+)\\s*";
+                                        Pattern pFormula = Pattern.compile(rFormula, Pattern.CASE_INSENSITIVE |Pattern.DOTALL);
+                                        Matcher mFormula = pFormula.matcher(colAgrup.getFormulaResumen());
+                                        if (mFormula.find()){
+                                            operadorFormula = mFormula.group(2);
+                                            valoresFormula.put(mFormula.group(1), 0D);
+                                            valoresFormula.put(mFormula.group(3), 0D);
+                                        }
+                                    }
+                                    for(JsonObject dato: datosGrupo){
+                                        if (dato.get(colAgrup.getNombreColumna()).isJsonNull()) continue;
+                                        switch(colAgrup.getTipoResumenColumna()){
+                                            case Sumatorio:
+                                            case MediaAritmetica:
+                                                valor += dato.get(colAgrup.getNombreColumna()).getAsDouble();
+                                                break;
+                                            case Maximo:
+                                                valor = valor < dato.get(colAgrup.getNombreColumna()).getAsDouble() ? dato.get(colAgrup.getNombreColumna()).getAsDouble() : valor;
+                                                break;
+                                            case Minimo:
+                                                valor = valor > dato.get(colAgrup.getNombreColumna()).getAsDouble() ? dato.get(colAgrup.getNombreColumna()).getAsDouble(): valor;
+                                                break;                                                                                                                                    
+                                            case Formula:
+                                            {
+                                                if (valoresFormula.size() == 2 && !operadorFormula.isEmpty()){
+                                                    double v1 = valoresFormula.get(valoresFormula.keySet().toArray()[0].toString());
+                                                    double v2 = valoresFormula.get(valoresFormula.keySet().toArray()[1].toString());
+                                                    v1 += dato.get(valoresFormula.keySet().toArray()[0].toString()).isJsonNull()? 0 : dato.get(valoresFormula.keySet().toArray()[0].toString()).getAsDouble(); 
+                                                    v2 += dato.get(valoresFormula.keySet().toArray()[1].toString()).isJsonNull()? 0 : dato.get(valoresFormula.keySet().toArray()[1].toString()).getAsDouble(); 
+                                                    valoresFormula.put(valoresFormula.keySet().toArray()[0].toString(), v1);
+                                                    valoresFormula.put(valoresFormula.keySet().toArray()[1].toString(), v2);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (colAgrup.getTipoResumenColumna() == TipoResumenColumna.MediaAritmetica && datosGrupo.size() > 0){
+                                        valor = valor / datosGrupo.size();
+                                    }
+                                    if (colAgrup.getTipoResumenColumna() == TipoResumenColumna.Recuento){
+                                        valor = datosGrupo.size();
+                                    }
+                                    if (colAgrup.getTipoResumenColumna() == TipoResumenColumna.Formula && valoresFormula.size() == 2 && !operadorFormula.isEmpty()){
+                                        double v1 = valoresFormula.get(valoresFormula.keySet().toArray()[0].toString());
+                                        double v2 = valoresFormula.get(valoresFormula.keySet().toArray()[1].toString());
+                                        if (operadorFormula.equals("+")) valor = v1 + v2;
+                                        if (operadorFormula.equals("-")) valor = v1 - v2;
+                                        if (operadorFormula.equals("*")) valor = v1 * v2;
+                                        if (operadorFormula.equals("/") && v2 != 0) valor = v1 / v2;
+                                    }
+                                    celdaTotal.setGravity(colAgrup.getAlineacionDatos().value());
+                                    celdaTotal.setText(new DecimalFormat(colAgrup.getFormatoDatosColumna()).format(valor));
+                                }else{
+                                    celdaTotal.setText("");
+                                }
+                                rowResumenGrupo.addView(celdaTotal);
+                                
+                            }
+                        }
                     }
-                    celdaAgrup.setTextColor(GridDatos.this.colorTextoAgrupacion);
-
-                    rowResumenGrupo.addView(celdaAgrup);
-                    
                     return rowResumenGrupo;
                 }
                 
@@ -454,23 +589,23 @@ public class GridDatos extends LinearLayout
                 @Override
                 protected void onPreExecute()
                 {
-                    dlgProgreso = ProgressDialog.show(contexto, tituloProgresoCarga, textoProgresoCarga, true, false);
-                    ProgressBar progreso = new ProgressBar(GridDatos.this.contexto);
-                    progreso.setVisibility(TableRow.VISIBLE);
-                    GridDatos.this.tablaDatos.removeAllViews();
-                    progreso.setLayoutParams(new TableRow.LayoutParams((int)GridDatos.this.altoCabecera, (int)GridDatos.this.altoCabecera));
-                    progreso.setVisibility(TableRow.VISIBLE);
-                    TableRow rowRefresh = new TableRow(GridDatos.this.contexto);
-                    GridDatos.this.tablaDatos.removeAllViews();
-                    rowRefresh.addView(progreso);                    
+                    dlgProgreso = ProgressDialog.show(contexto, tituloProgresoCarga, textoProgresoCarga, true, false);                    
+                    GridDatos.this.tablaDatos.removeAllViews();                                                                  
                 }
                 
                 @Override
                 protected Object doInBackground(Object... arg0)
                 {
+                    
                     ArrayList<TableRow> filas = new ArrayList<TableRow>();
-                    int i = 0;
+                    int i = 0;                    
                     if (GridDatos.this.vistaDatos != null){
+                        ArrayList<ColumnaGridDatos> resumidas = new ArrayList<ColumnaGridDatos>();
+                        for(ColumnaGridDatos c : GridDatos.this.columnas){
+                            if (c.getTipoResumenColumna() != TipoResumenColumna.SinResumen){
+                                resumidas.add(c);
+                            }
+                        }
                         for(String vAgrup : GridDatos.this.vistaDatos.keySet()){
                             if (!vAgrup.trim().isEmpty()) filas.add(this.FilaAgrupacion(vAgrup));
                                 
@@ -480,11 +615,19 @@ public class GridDatos extends LinearLayout
                             }
                             // Si se debe mostrar un resumen de grupos...
                             if (GridDatos.this.mostrarResumenGrupos && GridDatos.this.columnasAgrupacion.size() > 0){                                
-                                filas.add(this.FilaTotalGrupo(String.format("Total Grupo %s:", vAgrup), new ArrayList<String>()));
+                                //filas.add(this.FilaTotalGrupo(String.format("Total Grupo %s:", vAgrup), GridDatos.this.vistaDatos.get(vAgrup), resumidas));
+                                filas.add(this.FilaTotalGrupo(" ", GridDatos.this.vistaDatos.get(vAgrup), resumidas));
+                                TableRow trMargen = new TableRow(GridDatos.this.contexto);
+                                TextView txRelleno = new TextView(GridDatos.this.contexto);
+                                txRelleno.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,TableRow.LayoutParams.MATCH_PARENT));
+                                txRelleno.setText("   ");
+                                ((TableRow.LayoutParams)txRelleno.getLayoutParams()).span = GridDatos.this.columnas.size();
+                                trMargen.addView(txRelleno);                                                                
+                                filas.add(trMargen);
                             }
                         }
                         if (GridDatos.this.mostrarResumenGeneral){
-                            filas.add(this.FilaTotalGrupo("Total General:", new ArrayList<String>()));
+                            filas.add(this.FilaTotalGrupo("Total General:", GridDatos.this.origenDatos, resumidas));
                         }
                     }
                     return filas;
@@ -493,12 +636,17 @@ public class GridDatos extends LinearLayout
                 @Override
                 protected void onPostExecute(Object result)
                 {
-                    super.onPostExecute(result); //To change body of generated methods, choose Tools | Templates.
-                    GridDatos.this.tablaDatos.removeAllViews();
-                    dlgProgreso.dismiss();
+                    super.onPostExecute(result); //To change body of generated methods, choose Tools | Templates.                    
+                    
                     ArrayList<TableRow> filas = (ArrayList<TableRow>) result;
                     for(TableRow filaDato : filas)
                         GridDatos.this.tablaDatos.addView(filaDato, new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT));
+                    GridDatos.this.tablaDatos.setVisibility(TableLayout.VISIBLE);
+                    dlgProgreso.dismiss();
+                    
+                    GridDatos.this.removeAllViews();
+                    GridDatos.this.addView(GridDatos.this.lytPanelGrupos, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
+                    GridDatos.this.addView(GridDatos.this.hScroller, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT));
                 }
             };
             taskCargaDatos.execute();
@@ -508,6 +656,18 @@ public class GridDatos extends LinearLayout
     //</editor-fold>
     
     //<editor-fold defaultstate="collapsed" desc="Propiedades con Getters y Setters">
+        
+    public boolean isMostrarPanelAgrupacion()
+    {
+        return mostrarPanelAgrupacion;
+    }
+
+    public void setMostrarPanelAgrupacion(boolean mostrarPanelAgrupacion)
+    {
+        this.mostrarPanelAgrupacion = mostrarPanelAgrupacion;
+    }
+    
+    
     
     public boolean isMostrarResumenGrupos()
     {
@@ -738,13 +898,21 @@ public class GridDatos extends LinearLayout
         return origenDatos;
     }
 
+    public void EliminarAgrupaciones(){
+        this.columnasAgrupacion.clear();
+        this.GroupBy("");
+    }
     public void setOrigenDatos(OrigenDatos origenDatos)
     {
         this.origenDatos = origenDatos;
         this.vistaDatos = new LinkedHashMap<String, OrigenDatos>();
-        this.columnasAgrupacion.clear();
-        // Por defecto no hay agrupaciones
-        this.vistaDatos.put("", origenDatos);
+        if (this.columnasAgrupacion.size() > 0){
+            this.GroupBy("");
+        }else{        
+            // Por defecto no hay agrupaciones
+            this.vistaDatos.put("", origenDatos);
+            this.CargarDatos();
+        }
     }
     
     
@@ -772,12 +940,15 @@ public class GridDatos extends LinearLayout
      * @param strColumnas Nombres de las columnas (separados por | ) por las que agrupar (nombres de columna, no títulos de columna)
      */
     public void GroupBy(String strColumnas){        
-        this.vistaDatos.clear();
+        if (this.vistaDatos != null) 
+            this.vistaDatos.clear();
+        else 
+            this.vistaDatos = new LinkedHashMap<String, OrigenDatos>();
         // Comenzamos con todas las columnas visibles...
         if (!strColumnas.isEmpty()){
             String[] split = Pattern.compile("|", Pattern.LITERAL).split(strColumnas); //strColumnas.split("|");
             for (String col : split){
-                if (this.ColumnaPorNombre(col) != null) this.columnasAgrupacion.add(col);
+                if (this.ColumnaPorNombre(col) != null && !this.columnasAgrupacion.contains(col)) this.columnasAgrupacion.add(col);
             }
         }
         if (this.columnasAgrupacion.isEmpty()){
@@ -789,23 +960,21 @@ public class GridDatos extends LinearLayout
                 // Ocultamos la columna agrupada
                 this.ColumnaPorNombre(vAgrup).setVisible(false);
             }
-            // Se contruye el texto para la agrupación del siguiente modo <Título de la columna>: <valor de la columna> <Título de la columna>: <valor de la columna> ....
-            // Comenzamos a sacar los parámetros de agrupación...
-            for(JsonObject item : this.origenDatos){
+            
+            for(JsonObject item : GridDatos.this.origenDatos){
                 String textoAgrupacion = "";
-                for(String vAgrup : this.columnasAgrupacion){
-                    textoAgrupacion += String.format("%s: %s ", this.ColumnaPorNombre(vAgrup).getTitulo(), item.get(vAgrup).getAsString());
+                for(String vAgrup : GridDatos.this.columnasAgrupacion){
+                    // Se construye el texto para la agrupación del siguiente modo <Título de la columna>: <valor de la columna> <Título de la columna>: <valor de la columna> ....                            
+                    textoAgrupacion += String.format("%s: %s ", GridDatos.this.ColumnaPorNombre(vAgrup).getTitulo(), item.get(vAgrup).getAsString());
                 }
-                if (!this.vistaDatos.containsKey(textoAgrupacion)) this.vistaDatos.put(textoAgrupacion, new OrigenDatos(new JsonArray()));
-                this.vistaDatos.get(textoAgrupacion).getDatos().add(item);
+                if (!GridDatos.this.vistaDatos.containsKey(textoAgrupacion)) GridDatos.this.vistaDatos.put(textoAgrupacion, new OrigenDatos(new JsonArray()));
+                GridDatos.this.vistaDatos.get(textoAgrupacion).addDato(item);
             }
-            for(String k : this.vistaDatos.keySet()){
-                this.vistaDatos.put(k, new OrigenDatos(this.vistaDatos.get(k).getDatos()));
-            }
-        }
-        this.RefrescarPanelGrupos();
-        this.CargarDatos();
-        
+            for(String k : GridDatos.this.vistaDatos.keySet()){
+                GridDatos.this.vistaDatos.put(k, new OrigenDatos(GridDatos.this.vistaDatos.get(k).getDatos()));
+            }                       
+        }               
+        GridDatos.this.CargarDatos();
     }
     
     //</editor-fold>
@@ -814,15 +983,38 @@ public class GridDatos extends LinearLayout
     
     public void addColumna (ColumnaGridDatos columna){
         this.columnas.add(columna);
+        if (columna.isColumnaAgrupacion() && !this.columnasAgrupacion.contains(columna.getNombreColumna())) this.columnasAgrupacion.add(columna.getNombreColumna());
+        
+        // Ordenamos las columnas
+        Collections.sort(this.columnas, new Comparator<ColumnaGridDatos>() {
+
+            public int compare(ColumnaGridDatos arg0, ColumnaGridDatos arg1){
+                return Integer.valueOf(arg0.getPosicion()).compareTo(arg1.getPosicion());
+            }
+        });
         this.refrescarDatos = true;
     }
     
     public void addColumnas (ColumnaGridDatos [] nColumnas){
         this.columnas.addAll(Arrays.asList(nColumnas));
+        // Ordenamos las columnas
+        Collections.sort(this.columnas, new Comparator<ColumnaGridDatos>() {
+
+            public int compare(ColumnaGridDatos arg0, ColumnaGridDatos arg1){
+                return Integer.valueOf(arg0.getPosicion()).compareTo(arg1.getPosicion());
+            }
+        });
     }
     
     public void addColumnas (ArrayList<ColumnaGridDatos> nColumnas){
         this.columnas.addAll(nColumnas);
+        // Ordenamos las columnas
+        Collections.sort(this.columnas, new Comparator<ColumnaGridDatos>() {
+
+            public int compare(ColumnaGridDatos arg0, ColumnaGridDatos arg1){
+                return Integer.valueOf(arg0.getPosicion()).compareTo(arg1.getPosicion());
+            }
+        });
     }
     
     //</editor-fold>
@@ -831,13 +1023,21 @@ public class GridDatos extends LinearLayout
     @Override
     protected void onRestoreInstanceState(Parcelable state)
     {
-        if (state instanceof Bundle) {
+        if (state instanceof Bundle) {            
             Bundle bundle = (Bundle) state;               
             state = bundle.getParcelable("instanceState");
             this.origenDatos = (OrigenDatos) bundle.getSerializable("OrigenDatos");
             this.vistaDatos = (LinkedHashMap<String, OrigenDatos>) bundle.getSerializable("VistaDatos");
             this.columnasAgrupacion = bundle.getStringArrayList("ColumnasAgrupacion");            
             this.columnas = (ArrayList<ColumnaGridDatos>) bundle.getSerializable("Columnas");
+            
+            // Ordenamos las columnas
+            Collections.sort(this.columnas, new Comparator<ColumnaGridDatos>() {
+
+                public int compare(ColumnaGridDatos arg0, ColumnaGridDatos arg1){
+                    return Integer.valueOf(arg0.getPosicion()).compareTo(arg1.getPosicion());
+                }
+            });
         }    
         super.onRestoreInstanceState(state); //To change body of generated methods, choose Tools | Templates.
         
@@ -852,27 +1052,18 @@ public class GridDatos extends LinearLayout
         bundle.putSerializable("VistaDatos", this.vistaDatos);
         bundle.putSerializable("Columnas", this.columnas);
         bundle.putStringArrayList("ColumnasAgrupacion", columnasAgrupacion);
+                
         return bundle;
-    }
-            
-    /**
-     *
-     * @param changed
-     * @param left
-     * @param top
-     * @param right
-     * @param bottom
-     */
-    @SuppressLint("DrawAllocation")
+    }    
+    
     @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom)
-    {
-        super.onLayout(changed, left, top, right, bottom);
-        if (this.refrescarDatos || changed){
-            CargarDatos();
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b); //To change body of generated methods, choose Tools | Templates.
+        if (changed){
+            this.InicializarObjetos();
+            this.GroupBy("");
         }
     }
-    
-    //</editor-fold>
 
+    //</editor-fold>
 }
